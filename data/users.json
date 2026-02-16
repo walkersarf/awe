@@ -1,0 +1,14 @@
+[
+  {
+    "username": "admin",
+    "password": "admin123",
+    "role": "admin",
+    "lastLogin": "2026-02-16T11:47:28.712Z"
+  },
+  {
+    "username": "user",
+    "password": "user122",
+    "role": "employee",
+    "lastLogin": "2026-02-16T11:47:21.278Z"
+  }
+]
