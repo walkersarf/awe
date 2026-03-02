@@ -30,9 +30,13 @@ export async function getExpenses() {
             dl.date DESC
     `);
 
-    // Format the date objects to strings like 'YYYY-MM-DD'
+    // Format the date objects to strings like 'YYYY-MM-DD' and parse numbers
     return rows.map(r => ({
         ...r,
+        opening: parseFloat(r.opening) || 0,
+        closing: parseFloat(r.closing) || 0,
+        credit: parseFloat(r.credit) || 0,
+        debit: parseFloat(r.debit) || 0,
         date: format(new Date(r.date), 'yyyy-MM-dd')
     }));
 }
@@ -58,21 +62,21 @@ export async function getExpenseByDate(dateStr) {
     // Reconstruct the JSON shape expected by the frontend
     return {
         date: format(new Date(ledger.date), 'yyyy-MM-dd'),
-        opening: ledger.opening_balance,
-        closing: ledger.closing_balance,
+        opening: parseFloat(ledger.opening_balance) || 0,
+        closing: parseFloat(ledger.closing_balance) || 0,
         status: ledger.status,
 
-        creditBank: bankCredit.length > 0 ? bankCredit[0].amount : 0,
+        creditBank: bankCredit.length > 0 ? (parseFloat(bankCredit[0].amount) || 0) : 0,
         creditBankComment: bankCredit.length > 0 ? bankCredit[0].comment : '',
 
-        creditOthers: othersCredit.length > 0 ? othersCredit[0].amount : 0,
+        creditOthers: othersCredit.length > 0 ? (parseFloat(othersCredit[0].amount) || 0) : 0,
         creditOthersComment: othersCredit.length > 0 ? othersCredit[0].comment : '',
 
-        truckDebits: truckDebits.length > 0 ? truckDebits.map(t => ({ id: `truck-${t.id}`, truckNo: t.truck_no, amount: t.amount, comment: t.comment })) : [],
-        laborDebits: laborDebits.length > 0 ? laborDebits.map(l => ({ id: `labor-${l.id}`, date: l.date, amount: l.amount, comment: l.comment })) : [],
-        transportDebits: transportDebits.length > 0 ? transportDebits.map(t => ({ id: `transport-${t.id}`, amount: t.amount, comment: t.comment })) : [],
-        dieselDebits: dieselDebits.length > 0 ? dieselDebits.map(d => ({ id: `diesel-${d.id}`, amount: d.amount, comment: d.comment })) : [],
-        debits: regularDebits.length > 0 ? regularDebits.map(r => ({ id: r.id, details: r.details, amount: r.amount, comment: r.comment })) : []
+        truckDebits: truckDebits.length > 0 ? truckDebits.map(t => ({ id: `truck-${t.id}`, truckNo: t.truck_no, amount: parseFloat(t.amount) || 0, comment: t.comment })) : [],
+        laborDebits: laborDebits.length > 0 ? laborDebits.map(l => ({ id: `labor-${l.id}`, date: l.date, amount: parseFloat(l.amount) || 0, comment: l.comment })) : [],
+        transportDebits: transportDebits.length > 0 ? transportDebits.map(t => ({ id: `transport-${t.id}`, amount: parseFloat(t.amount) || 0, comment: t.comment })) : [],
+        dieselDebits: dieselDebits.length > 0 ? dieselDebits.map(d => ({ id: `diesel-${d.id}`, amount: parseFloat(d.amount) || 0, comment: d.comment })) : [],
+        debits: regularDebits.length > 0 ? regularDebits.map(r => ({ id: r.id, details: r.details, amount: parseFloat(r.amount) || 0, comment: r.comment })) : []
     };
 }
 
@@ -214,7 +218,7 @@ export async function getOpeningBalanceForDate(dateStr) {
     const [exactPrev] = await pool.query('SELECT closing_balance, date FROM daily_ledger WHERE date = ?', [prevDateStr]);
 
     if (exactPrev.length > 0) {
-        return { amount: exactPrev[0].closing_balance, date: format(exactPrev[0].date, 'yyyy-MM-dd') };
+        return { amount: parseFloat(exactPrev[0].closing_balance) || 0, date: format(exactPrev[0].date, 'yyyy-MM-dd') };
     }
 
     // 2. If no exact previous day, get the most recent past record
@@ -224,7 +228,7 @@ export async function getOpeningBalanceForDate(dateStr) {
     );
 
     if (recentPast.length > 0) {
-        return { amount: recentPast[0].closing_balance, date: format(recentPast[0].date, 'yyyy-MM-dd') };
+        return { amount: parseFloat(recentPast[0].closing_balance) || 0, date: format(recentPast[0].date, 'yyyy-MM-dd') };
     }
 
     return { amount: 0, date: null };

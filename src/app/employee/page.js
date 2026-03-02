@@ -331,7 +331,7 @@ function EmployeePortalContent() {
                                                 ) : (
                                                     <div className="flex items-center justify-end h-full w-full p-6 pr-6">
                                                         <span className="font-mono text-2xl font-bold text-white mr-4">
-                                                            {previousBalance.toFixed(2)}
+                                                            {parseFloat(previousBalance || 0).toFixed(2)}
                                                         </span>&nbsp;&nbsp;&nbsp;&nbsp;
                                                         {!isLocked && (
                                                             <button
