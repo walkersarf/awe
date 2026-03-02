@@ -2,10 +2,24 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Plus, Save, Lock, ArrowLeft, Trash2, Loader2, Edit2, Check, LogOut } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, Save, Lock, ArrowLeft, Trash2, Loader2, Edit2, Check, LogOut, Calculator } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
+
+const evaluateFormula = (val) => {
+    if (typeof val === 'string' && val.startsWith('=')) {
+        try {
+            const sanitized = val.slice(1).replace(/[^0-9+\-*/. ]/g, '');
+            if (!sanitized) return val;
+            const result = new Function(`return ${sanitized}`)();
+            return isNaN(result) ? val : String(result);
+        } catch (e) {
+            return val;
+        }
+    }
+    return val;
+};
 
 function EmployeePortalContent() {
     const searchParams = useSearchParams();
@@ -28,35 +42,35 @@ function EmployeePortalContent() {
     const [isEditingOpening, setIsEditingOpening] = useState(false);
 
     // Ledger State
-    const [previousBalance, setPreviousBalance] = useState(0);
+    const [previousBalance, setPreviousBalance] = useState("");
     const [lastBalanceDate, setLastBalanceDate] = useState(null);
     const [credits, setCredits] = useState({
-        bank: 0,
-        others: 0
+        bank: "",
+        others: ""
     });
     const [creditComments, setCreditComments] = useState({
         bank: "",
         others: ""
     });
     const [debits, setDebits] = useState([
-        { id: 1, details: "", amount: 0, comment: "" }
+        { id: 1, details: "", amount: "", comment: "" }
     ]);
     // Labor Bill State
     const [laborDebits, setLaborDebits] = useState([
-        { id: "labor-1", date: format(new Date(), "yyyy-MM-dd"), amount: 0, comment: "" }
+        { id: "labor-1", date: format(new Date(), "yyyy-MM-dd"), amount: "", comment: "" }
     ]);
     // Truck Bill State
     const [truckDebits, setTruckDebits] = useState([
-        { id: "truck-1", truckNo: "", amount: 0, comment: "" }
+        { id: "truck-1", truckNo: "", amount: "", comment: "" }
     ]);
     // DIC Transport State
     // DIC Transport State (Single Object in Array for compat)
     const [transportDebits, setTransportDebits] = useState([
-        { id: `transport-fixed`, details: "DIC Transport", amount: 0, comment: "" }
+        { id: `transport-fixed`, details: "DIC Transport", amount: "", comment: "" }
     ]);
     // Generator Diesel State (Single Object in Array for compat)
     const [dieselDebits, setDieselDebits] = useState([
-        { id: `diesel-fixed`, details: "Generator Diesel", amount: 0, comment: "" }
+        { id: `diesel-fixed`, details: "Generator Diesel", amount: "", comment: "" }
     ]);
 
     // Derived state
@@ -90,38 +104,38 @@ function EmployeePortalContent() {
 
                 if (data && data.date) {
                     // Populate form with existing data
-                    setPreviousBalance(data.opening || 0);
+                    setPreviousBalance(data.opening || "");
                     setLastBalanceDate(null); // It's an existing record, opening balance is fixed
-                    setCredits({ bank: data.creditBank || 0, others: data.creditOthers || 0 });
+                    setCredits({ bank: data.creditBank || "", others: data.creditOthers || "" });
                     setCreditComments({ bank: data.creditBankComment || "", others: data.creditOthersComment || "" });
-                    setDebits(data.debits || [{ id: Date.now(), details: "", amount: 0, comment: "" }]);
+                    setDebits(data.debits || [{ id: Date.now(), details: "", amount: "", comment: "" }]);
 
                     // Populate Labor Bill data or initialize default
                     if (data.laborDebits && data.laborDebits.length > 0) {
                         setLaborDebits(data.laborDebits);
                     } else {
-                        setLaborDebits([{ id: `labor-${Date.now()}`, date: selectedDate, amount: 0, comment: "" }]);
+                        setLaborDebits([{ id: `labor-${Date.now()}`, date: selectedDate, amount: "", comment: "" }]);
                     }
 
                     // Populate Truck Bill data
                     if (data.truckDebits && data.truckDebits.length > 0) {
                         setTruckDebits(data.truckDebits);
                     } else {
-                        setTruckDebits([{ id: `truck-${Date.now()}`, truckNo: "", amount: 0, comment: "" }]);
+                        setTruckDebits([{ id: `truck-${Date.now()}`, truckNo: "", amount: "", comment: "" }]);
                     }
 
                     // Populate DIC Transport data
                     if (data.transportDebits && data.transportDebits.length > 0) {
                         setTransportDebits(data.transportDebits);
                     } else {
-                        setTransportDebits([{ id: `transport-fixed`, details: "DIC Transport", amount: 0, comment: "" }]);
+                        setTransportDebits([{ id: `transport-fixed`, details: "DIC Transport", amount: "", comment: "" }]);
                     }
 
                     // Populate Generator Diesel data
                     if (data.dieselDebits && data.dieselDebits.length > 0) {
                         setDieselDebits(data.dieselDebits);
                     } else {
-                        setDieselDebits([{ id: `diesel-fixed`, details: "Generator Diesel", amount: 0, comment: "" }]);
+                        setDieselDebits([{ id: `diesel-fixed`, details: "Generator Diesel", amount: "", comment: "" }]);
                     }
 
                     setIsLocked(data.status === 'locked');
@@ -130,15 +144,15 @@ function EmployeePortalContent() {
                     const balRes = await fetch(`/api/expenses?date=${selectedDate}&type=opening-balance`);
                     const balData = await balRes.json();
 
-                    setPreviousBalance(balData.openingBalance || 0);
+                    setPreviousBalance(balData.openingBalance || "");
                     setLastBalanceDate(balData.balanceDate);
-                    setCredits({ bank: 0, others: 0 });
+                    setCredits({ bank: "", others: "" });
                     setCreditComments({ bank: "", others: "" });
-                    setDebits([{ id: Date.now(), details: "", amount: 0, comment: "" }]);
-                    setLaborDebits([{ id: `labor-${Date.now()}`, date: selectedDate, amount: 0, comment: "" }]);
-                    setTruckDebits([{ id: `truck-${Date.now()}`, truckNo: "", amount: 0, comment: "" }]);
-                    setTransportDebits([{ id: `transport-fixed`, details: "DIC Transport", amount: 0, comment: "" }]);
-                    setDieselDebits([{ id: `diesel-fixed`, details: "Generator Diesel", amount: 0, comment: "" }]);
+                    setDebits([{ id: Date.now(), details: "", amount: "", comment: "" }]);
+                    setLaborDebits([{ id: `labor-${Date.now()}`, date: selectedDate, amount: "", comment: "" }]);
+                    setTruckDebits([{ id: `truck-${Date.now()}`, truckNo: "", amount: "", comment: "" }]);
+                    setTransportDebits([{ id: `transport-fixed`, details: "DIC Transport", amount: "", comment: "" }]);
+                    setDieselDebits([{ id: `diesel-fixed`, details: "Generator Diesel", amount: "", comment: "" }]);
                     setIsLocked(false);
                 }
             } catch (error) {
@@ -154,7 +168,7 @@ function EmployeePortalContent() {
 
     // Regular Debit Handlers
     const addDebitRow = () => {
-        setDebits([...debits, { id: Date.now(), details: "", amount: 0, comment: "" }]);
+        setDebits([...debits, { id: Date.now(), details: "", amount: "", comment: "" }]);
     };
 
     const removeDebitRow = (id) => {
@@ -169,7 +183,7 @@ function EmployeePortalContent() {
 
     // Labor Bill Handlers
     const addLaborRow = () => {
-        setLaborDebits([...laborDebits, { id: `labor-${Date.now()}`, date: selectedDate, amount: 0, comment: "" }]);
+        setLaborDebits([...laborDebits, { id: `labor-${Date.now()}`, date: selectedDate, amount: "", comment: "" }]);
     };
 
     const removeLaborRow = (id) => {
@@ -184,7 +198,7 @@ function EmployeePortalContent() {
 
     // Truck Bill Handlers
     const addTruckRow = () => {
-        setTruckDebits([...truckDebits, { id: `truck-${Date.now()}`, truckNo: "", amount: 0, comment: "" }]);
+        setTruckDebits([...truckDebits, { id: `truck-${Date.now()}`, truckNo: "", amount: "", comment: "" }]);
     };
 
     const removeTruckRow = (id) => {
@@ -312,9 +326,10 @@ function EmployeePortalContent() {
                                                 {isEditingOpening && !isLocked ? (
                                                     <div className="flex items-center h-full w-full pr-4">
                                                         <input
-                                                            type="number"
+                                                            type="text"
                                                             value={previousBalance}
-                                                            onChange={(e) => setPreviousBalance(parseFloat(e.target.value) || 0)}
+                                                            onChange={(e) => setPreviousBalance(e.target.value)}
+                                                            onBlur={(e) => setPreviousBalance(evaluateFormula(e.target.value))}
                                                             autoFocus
                                                             className="w-full h-full p-6 bg-transparent text-right font-mono text-2xl font-bold text-white focus:outline-none placeholder-slate-600"
                                                             placeholder="0.00"
@@ -368,9 +383,10 @@ function EmployeePortalContent() {
                                                     </div>
                                                 ) : (
                                                     <input
-                                                        type="number"
+                                                        type="text"
                                                         value={credits.bank}
-                                                        onChange={(e) => setCredits({ ...credits, bank: parseFloat(e.target.value) || 0 })}
+                                                        onChange={(e) => setCredits({ ...credits, bank: e.target.value })}
+                                                        onBlur={(e) => setCredits({ ...credits, bank: evaluateFormula(e.target.value) })}
                                                         disabled={isLocked}
                                                         className="w-full h-full p-4 bg-transparent text-right font-mono text-lg focus:bg-white/5 focus:outline-none"
                                                         placeholder="0.00"
@@ -404,9 +420,10 @@ function EmployeePortalContent() {
                                                     </div>
                                                 ) : (
                                                     <input
-                                                        type="number"
+                                                        type="text"
                                                         value={credits.others}
-                                                        onChange={(e) => setCredits({ ...credits, others: parseFloat(e.target.value) || 0 })}
+                                                        onChange={(e) => setCredits({ ...credits, others: e.target.value })}
+                                                        onBlur={(e) => setCredits({ ...credits, others: evaluateFormula(e.target.value) })}
                                                         disabled={isLocked}
                                                         className="w-full h-full p-4 bg-transparent text-right font-mono text-lg focus:bg-white/5 focus:outline-none"
                                                         placeholder="0.00"
@@ -501,9 +518,10 @@ function EmployeePortalContent() {
                                                         </div>
                                                     ) : (
                                                         <input
-                                                            type="number"
+                                                            type="text"
                                                             value={item.amount}
-                                                            onChange={(e) => updateLabor(item.id, 'amount', parseFloat(e.target.value) || 0)}
+                                                            onChange={(e) => updateLabor(item.id, 'amount', e.target.value)}
+                                                            onBlur={(e) => updateLabor(item.id, 'amount', evaluateFormula(e.target.value))}
                                                             disabled={isLocked}
                                                             className="w-full h-full p-4 bg-transparent text-right font-mono focus:bg-white/5 focus:outline-none"
                                                             placeholder="0.00"
@@ -586,14 +604,25 @@ function EmployeePortalContent() {
                                                             {item.amount?.toFixed(2) || "0.00"}
                                                         </div>
                                                     ) : (
-                                                        <input
-                                                            type="number"
-                                                            value={item.amount}
-                                                            onChange={(e) => updateTruck(item.id, 'amount', parseFloat(e.target.value) || 0)}
-                                                            disabled={isLocked}
-                                                            className="w-full h-full p-4 bg-transparent text-right font-mono focus:bg-white/5 focus:outline-none"
-                                                            placeholder="0.00"
-                                                        />
+                                                        <div className="flex items-center w-full h-full relative">
+                                                            <input
+                                                                type="text"
+                                                                value={item.amount}
+                                                                onChange={(e) => updateTruck(item.id, 'amount', e.target.value)}
+                                                                onBlur={(e) => updateTruck(item.id, 'amount', evaluateFormula(e.target.value))}
+                                                                disabled={isLocked}
+                                                                className="w-full h-full p-4 pr-12 bg-transparent text-right font-mono focus:bg-white/5 focus:outline-none"
+                                                                placeholder="0.00"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateTruck(item.id, 'amount', evaluateFormula(item.amount))}
+                                                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"
+                                                                title="Calculate amount"
+                                                            >
+                                                                <Calculator size={16} />
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </td>
                                                 <td className="p-0">
@@ -630,9 +659,10 @@ function EmployeePortalContent() {
                                                     </div>
                                                 ) : (
                                                     <input
-                                                        type="number"
-                                                        value={transportDebits[0]?.amount || 0}
-                                                        onChange={(e) => updateTransport('amount', parseFloat(e.target.value) || 0)}
+                                                        type="text"
+                                                        value={transportDebits[0]?.amount}
+                                                        onChange={(e) => updateTransport('amount', e.target.value)}
+                                                        onBlur={(e) => updateTransport('amount', evaluateFormula(e.target.value))}
                                                         disabled={isLocked}
                                                         className="w-full h-full p-4 bg-transparent text-right font-mono focus:bg-white/5 focus:outline-none"
                                                         placeholder="0.00"
@@ -670,9 +700,10 @@ function EmployeePortalContent() {
                                                     </div>
                                                 ) : (
                                                     <input
-                                                        type="number"
-                                                        value={dieselDebits[0]?.amount || 0}
-                                                        onChange={(e) => updateDiesel('amount', parseFloat(e.target.value) || 0)}
+                                                        type="text"
+                                                        value={dieselDebits[0]?.amount}
+                                                        onChange={(e) => updateDiesel('amount', e.target.value)}
+                                                        onBlur={(e) => updateDiesel('amount', evaluateFormula(e.target.value))}
                                                         disabled={isLocked}
                                                         className="w-full h-full p-4 bg-transparent text-right font-mono focus:bg-white/5 focus:outline-none"
                                                         placeholder="0.00"
@@ -752,9 +783,10 @@ function EmployeePortalContent() {
                                                         </div>
                                                     ) : (
                                                         <input
-                                                            type="number"
+                                                            type="text"
                                                             value={item.amount}
-                                                            onChange={(e) => updateDebit(item.id, 'amount', parseFloat(e.target.value) || 0)}
+                                                            onChange={(e) => updateDebit(item.id, 'amount', e.target.value)}
+                                                            onBlur={(e) => updateDebit(item.id, 'amount', evaluateFormula(e.target.value))}
                                                             disabled={isLocked}
                                                             className="w-full h-full p-4 bg-transparent text-right font-mono focus:bg-white/5 focus:outline-none"
                                                             placeholder="0.00"
