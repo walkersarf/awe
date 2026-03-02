@@ -7,16 +7,16 @@ export async function GET(request) {
     const type = searchParams.get('type');
 
     if (type === 'opening-balance' && date) {
-        const { amount, date: balanceDate } = getOpeningBalanceForDate(date);
+        const { amount, date: balanceDate } = await getOpeningBalanceForDate(date);
         return NextResponse.json({ openingBalance: amount, balanceDate });
     }
 
     if (date) {
-        const expense = getExpenseByDate(date);
+        const expense = await getExpenseByDate(date);
         return NextResponse.json(expense || null);
     }
 
-    const expenses = getExpenses();
+    const expenses = await getExpenses();
     return NextResponse.json(expenses);
 }
 
@@ -29,7 +29,7 @@ export async function POST(request) {
         // If saving a new record, ensure we default status to 'pending' if not provided
         // If it's an update validation, keep existing status unless specified
 
-        const saved = saveExpense(body);
+        const saved = await saveExpense(body);
         return NextResponse.json(saved);
     } catch (err) {
         return NextResponse.json({ error: 'Failed to save data' }, { status: 500 });
@@ -46,7 +46,7 @@ export async function DELETE(request) {
 
     try {
         const { deleteExpense } = await import('@/lib/db');
-        deleteExpense(date);
+        await deleteExpense(date);
         return NextResponse.json({ success: true });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });

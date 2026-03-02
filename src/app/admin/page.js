@@ -180,7 +180,7 @@ export default function AdminPortal() {
         setExportEndDate(format(now, 'yyyy-MM-dd'));
     };
 
-    const downloadCSV = (filterByDate = false) => {
+    const downloadCSV = async (filterByDate = false) => {
         if (expenses.length === 0) {
             alert("No data to export");
             return;
@@ -206,72 +206,82 @@ export default function AdminPortal() {
         // Sort expenses by date if not already
         const sortedExpenses = expensesToExport.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        sortedExpenses.forEach(record => {
-            const date = record.date;
-            const status = record.status;
+        // Fetch detailed data for each day to populate CSV properly (since summary only has aggregates)
+        for (const basicRecord of sortedExpenses) {
+            try {
+                const res = await fetch(`/api/expenses?date=${basicRecord.date}`);
+                if (!res.ok) continue;
+                const record = await res.json();
+                if (!record) continue;
 
-            // Opening Balance
-            rows.push([date, "Opening Balance", "Balance B/F", record.opening || 0, "", status]);
+                const date = record.date;
+                const status = record.status;
 
-            // Credits
-            if (record.creditBank > 0) {
-                rows.push([date, "Credit", "Bank Deposit", record.creditBank, record.creditBankComment || "", status]);
+                // Opening Balance
+                rows.push([date, "Opening Balance", "Balance B/F", record.opening || 0, "", status]);
+
+                // Credits
+                if (record.creditBank > 0) {
+                    rows.push([date, "Credit", "Bank Deposit", record.creditBank, record.creditBankComment || "", status]);
+                }
+                if (record.creditOthers > 0) {
+                    rows.push([date, "Credit", "Cash Deposit", record.creditOthers, record.creditOthersComment || "", status]);
+                }
+
+                // Debits - Labor
+                if (record.laborDebits) {
+                    record.laborDebits.forEach(item => {
+                        if (item.amount > 0) {
+                            rows.push([date, "Debit", "Labor Bill - Labor Payment", -Math.abs(item.amount), item.comment || "", status]);
+                        }
+                    });
+                }
+
+                // Debits - Truck
+                if (record.truckDebits) {
+                    record.truckDebits.forEach(item => {
+                        if (item.amount > 0) {
+                            rows.push([date, "Debit", `Truck Expense - ${item.truckNo || "Truck"}`, -Math.abs(item.amount), item.comment || "", status]);
+                        }
+                    });
+                }
+
+                // Debits - Transport
+                if (record.transportDebits) {
+                    record.transportDebits.forEach(item => {
+                        if (item.amount > 0) {
+                            rows.push([date, "Debit", `DIC Transport - ${item.details || "Transport"}`, -Math.abs(item.amount), item.comment || "", status]);
+                        }
+                    });
+                }
+
+                // Debits - Diesel
+                if (record.dieselDebits) {
+                    record.dieselDebits.forEach(item => {
+                        if (item.amount > 0) {
+                            rows.push([date, "Debit", `Generator Diesel - ${item.details || "Diesel"}`, -Math.abs(item.amount), item.comment || "", status]);
+                        }
+                    });
+                }
+
+                // Debits - Other
+                if (record.debits) {
+                    record.debits.forEach(item => {
+                        if (item.amount > 0) {
+                            rows.push([date, "Debit", `Other Expense - ${item.details || "Expense"}`, -Math.abs(item.amount), item.comment || "", status]);
+                        }
+                    });
+                }
+
+                // Closing Balance
+                rows.push([date, "Closing Balance", "Balance C/F", record.closing || 0, "", status]);
+
+                // Empty row separator
+                rows.push(["", "", "", "", "", ""]);
+            } catch (err) {
+                console.error("Failed to fetch detailed record for export", err);
             }
-            if (record.creditOthers > 0) {
-                rows.push([date, "Credit", "Cash Deposit", record.creditOthers, record.creditOthersComment || "", status]);
-            }
-
-            // Debits - Labor
-            if (record.laborDebits) {
-                record.laborDebits.forEach(item => {
-                    if (item.amount > 0) {
-                        rows.push([date, "Debit", "Labor Bill - Labor Payment", -Math.abs(item.amount), item.comment || "", status]);
-                    }
-                });
-            }
-
-            // Debits - Truck
-            if (record.truckDebits) {
-                record.truckDebits.forEach(item => {
-                    if (item.amount > 0) {
-                        rows.push([date, "Debit", `Truck Expense - ${item.truckNo || "Truck"}`, -Math.abs(item.amount), item.comment || "", status]);
-                    }
-                });
-            }
-
-            // Debits - Transport
-            if (record.transportDebits) {
-                record.transportDebits.forEach(item => {
-                    if (item.amount > 0) {
-                        rows.push([date, "Debit", `DIC Transport - ${item.details || "Transport"}`, -Math.abs(item.amount), item.comment || "", status]);
-                    }
-                });
-            }
-
-            // Debits - Diesel
-            if (record.dieselDebits) {
-                record.dieselDebits.forEach(item => {
-                    if (item.amount > 0) {
-                        rows.push([date, "Debit", `Generator Diesel - ${item.details || "Diesel"}`, -Math.abs(item.amount), item.comment || "", status]);
-                    }
-                });
-            }
-
-            // Debits - Other
-            if (record.debits) {
-                record.debits.forEach(item => {
-                    if (item.amount > 0) {
-                        rows.push([date, "Debit", `Other Expense - ${item.details || "Expense"}`, -Math.abs(item.amount), item.comment || "", status]);
-                    }
-                });
-            }
-
-            // Closing Balance
-            rows.push([date, "Closing Balance", "Balance C/F", record.closing || 0, "", status]);
-
-            // Empty row separator
-            rows.push(["", "", "", "", "", ""]);
-        });
+        }
 
         const csvContent = [
             headers.join(","),

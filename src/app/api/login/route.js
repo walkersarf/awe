@@ -5,7 +5,7 @@ export async function POST(request) {
     try {
         const { username, password, type } = await request.json();
 
-        const user = getUser(username);
+        const user = await getUser(username);
         let isAuthenticated = false;
 
         if (user && user.password === password && user.role === type) {
@@ -14,7 +14,7 @@ export async function POST(request) {
 
         if (isAuthenticated) {
             // Update last login
-            saveUser({ ...user, lastLogin: new Date().toISOString() });
+            await saveUser({ ...user, lastLogin: new Date().toISOString() });
 
             const response = NextResponse.json({ success: true, role: user.role });
 

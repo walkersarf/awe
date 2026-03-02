@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Plus, Save, Lock, ArrowLeft, Trash2, Loader2, Edit2, Check, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 
-export default function EmployeePortal() {
+function EmployeePortalContent() {
     const searchParams = useSearchParams();
     const queryDate = searchParams.get('date');
     const [selectedDate, setSelectedDate] = useState(queryDate || format(new Date(), "yyyy-MM-dd"));
@@ -814,5 +814,13 @@ export default function EmployeePortal() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function EmployeePortal() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center p-6"><Loader2 className="animate-spin text-indigo-500" size={48} /></div>}>
+            <EmployeePortalContent />
+        </Suspense>
     );
 }
