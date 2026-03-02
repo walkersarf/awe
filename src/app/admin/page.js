@@ -390,7 +390,7 @@ export default function AdminPortal() {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
                                     <div className="glass-panel p-6 border-l-4 border-indigo-500">
                                         <span className="text-slate-400 text-sm uppercase font-bold">Current Balance</span>
-                                        <p className="text-3xl font-mono font-bold mt-2 text-white">{currentBalance.toFixed(2)}</p>
+                                        <p className="text-3xl font-mono font-bold mt-2 text-white">{parseFloat(currentBalance || 0).toFixed(2)}</p>
                                     </div>
                                     <div className="glass-panel p-6 border-l-4 border-pink-500">
                                         <span className="text-slate-400 text-sm uppercase font-bold">Pending Approvals</span>
@@ -398,7 +398,7 @@ export default function AdminPortal() {
                                     </div>
                                     <div className="glass-panel p-6 border-l-4 border-teal-500">
                                         <span className="text-slate-400 text-sm uppercase font-bold">Total Credit (All Time)</span>
-                                        <p className="text-3xl font-mono font-bold mt-2 text-teal-400">{monthCredit.toFixed(2)}</p>
+                                        <p className="text-3xl font-mono font-bold mt-2 text-teal-400">{parseFloat(monthCredit || 0).toFixed(2)}</p>
                                     </div>
                                 </div>
 
@@ -440,12 +440,12 @@ export default function AdminPortal() {
                                                         <tr key={row.date} className="hover:bg-slate-800/30 transition-colors">
                                                             <td className="p-4 font-medium text-white">{row.date}</td>
                                                             <td className={`p-4 text-right font-mono ${isMismatch ? 'text-red-500 font-bold' : 'text-slate-300'}`} title={isMismatch ? "Opening balance mismatch with previous day closing" : ""}>
-                                                                {(row.opening || 0).toFixed(2)}
+                                                                {parseFloat(row.opening || 0).toFixed(2)}
                                                                 {isMismatch && <span className="ml-2 text-xs text-red-500">⚠</span>}
                                                             </td>
-                                                            <td className="p-4 text-right font-mono text-emerald-400">+{(row.credit || 0).toFixed(2)}</td>
-                                                            <td className="p-4 text-right font-mono text-pink-400">-{(row.debit || 0).toFixed(2)}</td>
-                                                            <td className="p-4 text-right font-mono font-bold text-white">{(row.closing || 0).toFixed(2)}</td>
+                                                            <td className="p-4 text-right font-mono text-emerald-400">+{parseFloat(row.credit || 0).toFixed(2)}</td>
+                                                            <td className="p-4 text-right font-mono text-pink-400">-{parseFloat(row.debit || 0).toFixed(2)}</td>
+                                                            <td className="p-4 text-right font-mono font-bold text-white">{parseFloat(row.closing || 0).toFixed(2)}</td>
                                                             <td className="p-4 text-center">
                                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${row.status === 'locked'
                                                                     ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
